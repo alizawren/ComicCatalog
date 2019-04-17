@@ -91,9 +91,6 @@ public class MainActivity extends AppCompatActivity {
                     text = text + "First barcode value: " + thisCode.rawValue;
                     txtView.setText(text);
                 }
-                else {
-                    txtView.setText("No barcodes detected! Please try again. :(");
-                }
 
             }
         });
@@ -120,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
                     } else{
                         //otherwise, request for permission, function down below
                         requestStoragePermission();
+
                     }
 
                 }
@@ -158,6 +156,8 @@ public class MainActivity extends AppCompatActivity {
     }
     //requests for permission to use camera
     private void requestStoragePermission(){
+        ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, STORAGE_PERMISSION_CODE);
+        /*
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)){
             //this is if the user denies the first request for permission
             //and gives an explanation of what we're using their camera for
@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             //if they grant us permission, change the permission status
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, STORAGE_PERMISSION_CODE);
-        }
+        }*/
     }
     //once the permision status changes (we are granted permission),
     //then we make a dialog box indicating so
@@ -193,9 +193,16 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera Permission Granted", Toast.LENGTH_SHORT).show();
+
+                // Bad place to put this!! But I don't know where else to put it to avoid async issues.
+                // Opens the camera as soon as you grant permission
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                }
             } else{
-                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera Permission Denied", Toast.LENGTH_SHORT).show();
             }
         }
     }
