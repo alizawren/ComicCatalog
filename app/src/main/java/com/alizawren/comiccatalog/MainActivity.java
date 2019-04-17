@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     static final String TAG = "MainActivity";
 
     ImageView myImageView;
+    Bitmap imageBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +63,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 TextView txtView = (TextView) findViewById(R.id.txtContent);
 
-                myImageView = (ImageView) findViewById(R.id.imgview);
-                Bitmap myBitmap = BitmapFactory.decodeResource(
+                /*Bitmap myBitmap = BitmapFactory.decodeResource(
                         getApplicationContext().getResources(),
                         R.drawable.puppy);
-                myImageView.setImageBitmap(myBitmap);
+                myImageView.setImageBitmap(myBitmap);*/
 
                 BarcodeDetector detector =
                         new BarcodeDetector.Builder(getApplicationContext())
@@ -77,7 +77,12 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                Frame frame = new Frame.Builder().setBitmap(myBitmap).build();
+                if (imageBitmap == null) {
+                    Toast.makeText(getApplicationContext(), "Please take a picture first.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Frame frame = new Frame.Builder().setBitmap(imageBitmap).build();
                 SparseArray<Barcode> barcodes = detector.detect(frame);
 
                 Barcode thisCode = barcodes.valueAt(0);
@@ -122,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            imageBitmap = (Bitmap) extras.get("data");
             if(imageBitmap != null) {
                 myImageView.setImageBitmap(imageBitmap);
             }
