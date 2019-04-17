@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
                 BarcodeDetector detector =
                         new BarcodeDetector.Builder(getApplicationContext())
-                                .setBarcodeFormats(Barcode.DATA_MATRIX | Barcode.QR_CODE)
+                                .setBarcodeFormats(Barcode.ALL_FORMATS)
                                 .build();
                 if(!detector.isOperational()){
                     txtView.setText("Could not set up the detector!");
@@ -75,8 +75,16 @@ public class MainActivity extends AppCompatActivity {
                 Frame frame = new Frame.Builder().setBitmap(imageBitmap).build();
                 SparseArray<Barcode> barcodes = detector.detect(frame);
 
-                Barcode thisCode = barcodes.valueAt(0);
-                txtView.setText(thisCode.rawValue);
+                String text = "Number of barcodes detected: " + barcodes.size() + "\n";
+                if (barcodes.size() > 0) {
+                    Barcode thisCode = barcodes.valueAt(0);
+                    text = text + "First barcode value: " + thisCode.rawValue;
+                    txtView.setText(text);
+                }
+                else {
+                    txtView.setText("No barcodes detected! Please try again. :(");
+                }
+
             }
         });
 
