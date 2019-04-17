@@ -86,11 +86,11 @@ public class MainActivity extends AppCompatActivity {
                 SparseArray<Barcode> barcodes = detector.detect(frame);
 
                 String text = "Number of barcodes detected: " + barcodes.size() + "\n";
-                if (barcodes.size() > 0) {
-                    Barcode thisCode = barcodes.valueAt(0);
-                    text = text + "First barcode value: " + thisCode.rawValue;
-                    txtView.setText(text);
+                for (int i = 0; i < barcodes.size(); i++) {
+                    Barcode thisCode = barcodes.valueAt(i);
+                    text = text + i + ": " + thisCode.rawValue + "\n";
                 }
+                txtView.setText(text);
 
             }
         });
