@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Frame;
@@ -33,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final Context context = this;
+
+        // NOTE: code here just processes an image of a QR code in the directory
 
         // https://codelabs.developers.google.com/codelabs/bar-codes/#5
         Button btn = (Button) findViewById(R.id.button);
@@ -56,31 +59,6 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                //BarcodeTrackerFactory barcodeFactory = new BarcodeTrackerFactory(mGraphicOverlay);
-                //BarcodeTrackerFactory barcodeFactory = new BarcodeTrackerFactory();
-
-                MultiProcessor.Factory<Barcode> barcodeFactory = new MultiProcessor.Factory<Barcode>() {
-                    @Override
-                    public Tracker<Barcode> create(Barcode barcode) {
-                        return null;
-                    }
-                };
-
-                detector.setProcessor(
-                        new MultiProcessor.Builder<>(barcodeFactory).build());
-
-                // may need this later
-                //detector.setProcessor(
-                //        new MultiProcessor.Builder<Face>()
-                //                .build(new GraphicFaceTrackerFactory()));
-
-                CameraSource mCameraSource = new CameraSource.Builder(context, detector)
-                        .setFacing(CameraSource.CAMERA_FACING_BACK)
-                        .setRequestedFps(15.0f)
-                        .build();
-
-                //mPreview.start(mCameraSource, mGraphicOverlay);
-
                 Frame frame = new Frame.Builder().setBitmap(myBitmap).build();
                 SparseArray<Barcode> barcodes = detector.detect(frame);
 
@@ -89,19 +67,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Opens the camera activity
         Button openCameraButton = (Button) findViewById(R.id.open_camera_button);
         openCameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final Intent intent = new Intent(context, CameraActivity.class);
-                context.startActivity(intent);
+                if (checkCameraHardware(context)) {
+                    final Intent intent = new Intent(context, CameraActivity.class);
+                    context.startActivity(intent);
+                }
+                else {
+                    Toast.makeText(getApplicationContext(),"Device has no camera!", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
-
-
-
-
-
     }
+
+    /** Check if this device has a camera */
+    private boolean checkCameraHardware(Context context) {
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+            // this device has a camera
+            return true;
+        } else {
+            // no camera on this device
+            return false;
+        }
+    }
+
 }
