@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -19,6 +20,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.Button;
@@ -38,12 +40,18 @@ public class MainActivity extends AppCompatActivity {
     private int STORAGE_PERMISSION_CODE = 1;
 
 
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+    static final String TAG = "MainActivity";
+
+    ImageView myImageView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         final Context context = this;
+        myImageView = (ImageView) findViewById(R.id.imgview);
 
         // NOTE: code here just processes an image of a QR code in the directory
 
@@ -54,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 TextView txtView = (TextView) findViewById(R.id.txtContent);
 
-                ImageView myImageView = (ImageView) findViewById(R.id.imgview);
+                myImageView = (ImageView) findViewById(R.id.imgview);
                 Bitmap myBitmap = BitmapFactory.decodeResource(
                         getApplicationContext().getResources(),
                         R.drawable.puppy);
@@ -89,8 +97,13 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                         //in this case, permission is already granted
                         //and you can proceed with starting the camera
-                        final Intent intent = new Intent(context, CameraActivity.class);
-                        context.startActivity(intent);
+                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                        }
+                        //old code
+                        //final Intent intent = new Intent(context, CameraActivity.class);
+                        //startActivityForResult(intent, 1);
                     } else{
                         //otherwise, request for permission, function down below
                         requestStoragePermission();
@@ -103,6 +116,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            if(imageBitmap != null) {
+                myImageView.setImageBitmap(imageBitmap);
+            }
+            else {
+                Toast.makeText(getApplicationContext(), "Something went wrong when taking a picture!", Toast.LENGTH_SHORT).show();
+            }
+
+        }
     }
 
     /** Check if this device has a camera */
