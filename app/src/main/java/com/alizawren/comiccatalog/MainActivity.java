@@ -1,9 +1,16 @@
 package com.alizawren.comiccatalog;
 
+import android.Manifest;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -27,6 +34,9 @@ import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 public class MainActivity extends AppCompatActivity {
+    //this will store whether or not we were granted camera permissions
+    private int STORAGE_PERMISSION_CODE = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +82,20 @@ public class MainActivity extends AppCompatActivity {
         openCameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //check if the camera exists first
                 if (checkCameraHardware(context)) {
-                    final Intent intent = new Intent(context, CameraActivity.class);
-                    context.startActivity(intent);
+                    //if the camera exists, then we request for permission
+                    if (ContextCompat.checkSelfPermission(MainActivity.this,
+                            Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        //in this case, permission is already granted
+                        //and you can proceed with starting the camera
+                        final Intent intent = new Intent(context, CameraActivity.class);
+                        context.startActivity(intent);
+                    } else{
+                        //otherwise, request for permission, function down below
+                        requestStoragePermission();
+                    }
+
                 }
                 else {
                     Toast.makeText(getApplicationContext(),"Device has no camera!", Toast.LENGTH_SHORT).show();
@@ -92,6 +113,49 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // no camera on this device
             return false;
+        }
+    }
+    //requests for permission to use camera
+    private void requestStoragePermission(){
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)){
+            //this is if the user denies the first request for permission
+            //and gives an explanation of what we're using their camera for
+            new AlertDialog.Builder(this)
+                    .setTitle("Permission needed")
+                    .setMessage("We need to use the camera")
+                    .setPositiveButton("Okay", new DialogInterface.OnClickListener(){
+                        //if the user is okay with us asking again,
+                        //we request for permission
+                        @Override
+                        public void onClick(DialogInterface dialog, int which){
+                            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.CAMERA}, STORAGE_PERMISSION_CODE);
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+                        //if the user does not want us to ask again,
+                        //we leave them alone
+                        @Override
+                        public void onClick(DialogInterface dialog, int which){
+                            dialog.dismiss();
+                        }
+                    })
+                    .create().show();
+        } else {
+            //if they grant us permission, change the permission status
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, STORAGE_PERMISSION_CODE);
+        }
+    }
+    //once the permision status changes (we are granted permission),
+    //then we make a dialog box indicating so
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+            } else{
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
