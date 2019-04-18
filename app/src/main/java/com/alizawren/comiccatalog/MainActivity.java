@@ -38,6 +38,21 @@ import com.google.android.gms.vision.barcode.BarcodeDetector;
 public class MainActivity extends AppCompatActivity {
     //this will store whether or not we were granted camera permissions
     private int STORAGE_PERMISSION_CODE = 1;
+    //add firebase somehow
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
