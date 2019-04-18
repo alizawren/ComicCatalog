@@ -11,10 +11,23 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView android:text=""
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/userMessage"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/txtContent"/>
+            android:text="Hello!"
+            android:textAlignment="center"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textAlignment="center"
+            android:textSize="18sp" />
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

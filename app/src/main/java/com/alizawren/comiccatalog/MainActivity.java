@@ -38,6 +38,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alizawren.comiccatalog.util.Consumer;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -48,6 +49,8 @@ import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
@@ -86,10 +89,14 @@ public class MainActivity extends AppCompatActivity {
     ImageView myImageView;
     Bitmap imageBitmap;
     TextView txtView;
+    TextView userMessage;
 
     ContentValues values;
     private Uri imageUri;
     private String currentPhotoPath;
+
+    private FirebaseAuth mAuth;
+    public static User currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,10 +109,23 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this,"We need permissions for our app to work!",Toast.LENGTH_SHORT).show();
         }
 
+        myImageView = (ImageView) findViewById(R.id.imgview);
+        txtView = (TextView) findViewById(R.id.textView);
+        userMessage = (TextView) findViewById(R.id.userMessage);
+
         FirebaseApp.initializeApp(this);
 
-        myImageView = (ImageView) findViewById(R.id.imgview);
-        txtView = (TextView) findViewById(R.id.txtContent);
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser user = mAuth.getCurrentUser();
+        FirebaseUtil.getUser(user).onResult(new Consumer<User>() {
+            @Override
+            public void accept(User user) {
+                currentUser = user;
+                userMessage.setText("Hello " + currentUser.getDisplayName() + "!");
+            }
+        });
+
+
 
         // https://codelabs.developers.google.com/codelabs/bar-codes/#5
         Button btn = (Button) findViewById(R.id.button);
