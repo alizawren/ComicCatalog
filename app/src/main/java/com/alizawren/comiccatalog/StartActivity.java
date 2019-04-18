@@ -49,19 +49,6 @@ public class StartActivity extends AppCompatActivity {
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
 
-        FirebaseUser user = mAuth.getCurrentUser();
-
-        // Loading screen... async task?
-
-        FirebaseUtil.getUser(user).onResult(new Consumer<User>() {
-            @Override
-            public void accept(User user) {
-                currentUser = user;
-                updateUI();
-            }
-
-        });
-
 
         // Build a GoogleSignInClient with the options specified by gso.
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);

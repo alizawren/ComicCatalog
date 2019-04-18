@@ -121,7 +121,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void accept(User user) {
                 currentUser = user;
-                userMessage.setText("Hello " + currentUser.getDisplayName() + "!");
+                if (currentUser != null) {
+                    userMessage.setText("Hello " + currentUser.getDisplayName() + "!");
+                }
+
             }
         });
 
