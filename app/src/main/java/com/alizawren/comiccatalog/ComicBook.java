@@ -10,7 +10,7 @@ public class ComicBook {
     private String imageUrl;
 
     public ComicBook() {
-
+        this.isbn = "";
     }
 
     public ComicBook(String isbn, String title, String recordUrl, String imageUrl) {
@@ -23,5 +23,11 @@ public class ComicBook {
     public String getIsbn() {
         return isbn;
     }
+
+    public String getTitle() { return title; }
+
+    public String getRecordUrl() { return recordUrl; }
+
+    public String getImageUrl() { return imageUrl; }
 
 }
