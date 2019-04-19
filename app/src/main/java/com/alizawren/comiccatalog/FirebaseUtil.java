@@ -78,6 +78,7 @@ public class FirebaseUtil {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
         // NOTE: THIS NEEDS TO CHANGE TO HAVE COMIC BOOKS BE STORED UNDER USER
+        // Store more than just ISBN
         firestore.collection(COMIC_BOOK_COLLECTION_KEY)
                 .document(comicBook.getIsbn())
                 .set(comicBook)
