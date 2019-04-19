@@ -65,7 +65,7 @@ public class FirebaseUtil {
         return callback;
     }
 
-    static public Callback<ComicBook> addParkingSpot(User user, final ComicBook comicBook) {
+    static public Callback<ComicBook> addComicBook(User user, final ComicBook comicBook) {
         final Callback<ComicBook> callback = new Callback<>();
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
@@ -77,6 +77,7 @@ public class FirebaseUtil {
 
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
+        // NOTE: THIS NEEDS TO CHANGE TO HAVE COMIC BOOKS BE STORED UNDER USER
         firestore.collection(COMIC_BOOK_COLLECTION_KEY)
                 .document(comicBook.getIsbn())
                 .set(comicBook)
@@ -98,7 +99,7 @@ public class FirebaseUtil {
         return callback;
     }
 
-    static public void removeParkingSpot(ComicBook comicBook) {
+    static public void removeComicBook(ComicBook comicBook) {
         FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
 
@@ -113,13 +114,13 @@ public class FirebaseUtil {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "Parking spot successfully deleted!");
+                        Log.d(TAG, "Comic book successfully deleted!");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error deleting parking spot", e);
+                        Log.w(TAG, "Error deleting comic book", e);
                     }
                 });
     }

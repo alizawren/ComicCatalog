@@ -1,6 +1,7 @@
 package com.alizawren.comiccatalog;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
@@ -59,6 +60,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.text.SimpleDateFormat;
@@ -95,15 +97,20 @@ public class MainActivity extends AppCompatActivity {
     private Uri imageUri;
     private String currentPhotoPath;
 
-    private FirebaseAuth mAuth;
-    public static User currentUser;
+    private String currentRecordUrl;
+    private String currentIsbn;
+    private String currentTitle;
+    private String currentImageUrl;
+
+    //private FirebaseAuth mAuth;
+    User user;
+
+    final Context context = this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        final Context context = this;
 
         if(!checkAndRequestPermissions()) {
             Toast.makeText(this,"We need permissions for our app to work!",Toast.LENGTH_SHORT).show();
@@ -115,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
         FirebaseApp.initializeApp(this);
 
-        mAuth = FirebaseAuth.getInstance();
+        /*mAuth = FirebaseAuth.getInstance();
         FirebaseUser user = mAuth.getCurrentUser();
         FirebaseUtil.getUser(user).onResult(new Consumer<User>() {
             @Override
@@ -126,8 +133,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
             }
-        });
-
+        });*/
+        user = StartActivity.currentUser;
 
 
         // https://codelabs.developers.google.com/codelabs/bar-codes/#5
@@ -136,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-        scanBarcodesWithFirebase();
+                scanBarcodesWithFirebase();
 
             }
         });
@@ -195,7 +202,6 @@ public class MainActivity extends AppCompatActivity {
         FirebaseVisionBarcodeDetector newDetector = FirebaseVision.getInstance()
                 .getVisionBarcodeDetector(options);
 
-
         Task<List<FirebaseVisionBarcode>> result = newDetector.detectInImage(image)
                 .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
                     @Override
@@ -203,34 +209,28 @@ public class MainActivity extends AppCompatActivity {
                         // Task completed successfully
                         // ...
 
-                        String text = "Number of barcodes detected: " + barcodes.size() + "\n";
+                        //processBarcodes(barcodes);
 
-                        String isbn = null;
-
-                        for (int index = 0; index < barcodes.size(); index++) {
-                            FirebaseVisionBarcode barcode = barcodes.get(index);
-                            Rect bounds = barcode.getBoundingBox();
-                            Point[] corners = barcode.getCornerPoints();
-
-                            String rawValue = barcode.getRawValue();
-                            isbn = rawValue;
-                            text = text + "Barcode " + (index+1) + ": " + rawValue + "\n";
-
-                            int valueType = barcode.getValueType();
-                            // See API reference for complete list of supported types
-                            switch (valueType) {
-                                case FirebaseVisionBarcode.TYPE_PRODUCT:
-
-                                    break;
-                                case FirebaseVisionBarcode.TYPE_URL:
-                                    String title = barcode.getUrl().getTitle();
-                                    String url = barcode.getUrl().getUrl();
-                                    break;
-                            }
+                        if (barcodes.size() < 1) {
+                            txtView.setText("No barcodes detected. Please try again!");
+                            return;
+                        }
+                        if (barcodes.size() > 1) {
+                            txtView.setText("Too many barcodes in the same photo. (Support for multiple barcodes is a future feature.) Please try again!");
+                            return;
                         }
 
-                        txtView.setText(text);
-                        new GetJSONTask().execute("http://openlibrary.org/api/volumes/brief/isbn/"+isbn+".json");
+                        FirebaseVisionBarcode barcode = barcodes.get(0);
+                        String rawValue = barcode.getRawValue();
+                        String isbn = rawValue;
+
+                        new GetJSONTask(new Consumer<JSONObject>() {
+                            @Override
+                            public void accept(JSONObject bookObject) {
+                                Log.d(TAG, "Response From Asynchronous task: " + bookObject.toString());
+                                openComicDialog(bookObject);
+                            }
+                        }).execute("http://openlibrary.org/api/volumes/brief/isbn/"+isbn+".json");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -238,8 +238,86 @@ public class MainActivity extends AppCompatActivity {
                     public void onFailure(@NonNull Exception e) {
                         // Task failed with an exception
                         // ...
+                        Toast.makeText(getApplicationContext(), "The detector didn't work with error: " + e, Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    // not being used
+    private void processBarcodes(List<FirebaseVisionBarcode> barcodes) {
+        String text = "Number of barcodes detected: " + barcodes.size() + "\n";
+
+        String isbn = null;
+
+        for (int index = 0; index < barcodes.size(); index++) {
+            FirebaseVisionBarcode barcode = barcodes.get(index);
+            Rect bounds = barcode.getBoundingBox();
+            Point[] corners = barcode.getCornerPoints();
+
+            String rawValue = barcode.getRawValue();
+            isbn = rawValue;
+            text = text + "Barcode " + (index+1) + ": " + rawValue + "\n";
+
+            int valueType = barcode.getValueType();
+            // See API reference for complete list of supported types
+            switch (valueType) {
+                case FirebaseVisionBarcode.TYPE_PRODUCT:
+
+                    break;
+                case FirebaseVisionBarcode.TYPE_URL:
+                    String title = barcode.getUrl().getTitle();
+                    String url = barcode.getUrl().getUrl();
+                    break;
+            }
+        }
+
+        txtView.setText(text);
+    }
+
+    private void openComicDialog(JSONObject bookObject) {
+        try {
+            currentRecordUrl = bookObject.getString("recordURL");
+            currentIsbn = bookObject.getJSONArray("isbns").getString(0);
+            currentTitle = bookObject.getJSONObject("data").getString("title");
+            currentImageUrl = bookObject.getJSONObject("cover").getString("small");
+            //currentImageUrl = bookObject.getJSONObject("details").getString("thumbnail_url");
+
+        }
+        catch (Exception e) {
+            Toast.makeText(context, "Can't parse JSON: " + e,Toast.LENGTH_SHORT).show();
+        }
+
+        ImageView cover = new ImageView(this);
+        cover.setLayoutParams(new ActionBar.LayoutParams(ActionBar.LayoutParams.MATCH_PARENT, ActionBar.LayoutParams.MATCH_PARENT));
+        new DownloadImageTask(cover).execute(currentImageUrl);
+
+        String message = "Title: " + currentTitle + "\nISBN: " + currentIsbn +
+                "\nRecord URL: " + currentRecordUrl +
+                "\n\nWould you like to save this book to your library?";
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        alertDialogBuilder.setView(cover);
+        alertDialogBuilder.setMessage(message);
+        alertDialogBuilder.setPositiveButton("Save to Library", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // yes was pressed
+                // create a comic book object with data
+
+                ComicBook book = new ComicBook(currentIsbn, currentTitle, currentRecordUrl, "none");
+                // Save the comic into the database
+                FirebaseUtil.addComicBook(user, book);
+            }
+        });
+        alertDialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // no was pressed
+            }
+
+        });
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+
+
     }
 
     private void scanBarcodesWithGoogleAPI() {
@@ -387,7 +465,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class GetJSONTask extends AsyncTask<String, Void, String> {
+        private Consumer<JSONObject> bookResponse = null;
         private ProgressDialog pd;
+
+        // constructor
+        public GetJSONTask(Consumer<JSONObject> asyncResponse) {
+            bookResponse = asyncResponse;//Assigning call back interfacethrough constructor
+        }
+
         @Override
         protected void onPreExecute(){
             pd = ProgressDialog.show(MainActivity.this,"","Loading",true,false);
@@ -416,6 +501,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 return("Error when retrieving data, response code:" + responseCode + "\nerror message: " + e);
             }
+
             return response.toString();
         }
         @Override
@@ -428,11 +514,42 @@ public class MainActivity extends AppCompatActivity {
                 String placeHolder = "Record URL: "+bookObject.getString("recordURL")+"\n"+
                         "ISBN: "+bookObject.getJSONArray("isbns").getString(0)+"\n"+
                         "Title: "+bookObject.getJSONObject("data").getString("title");
-                txtView.setText(placeHolder);
+                //txtView.setText(placeHolder);
+                bookResponse.accept(bookObject);
+
             } catch (Exception e){
-                txtView.setText("Can't parse JSON: " + e);
+                //txtView.setText("Can't parse JSON: " + e);
+                Toast.makeText(context, "Can't parse JSON: " + e,Toast.LENGTH_SHORT).show();
             }
 
+        }
+    }
+
+
+    // Using this: https://stackoverflow.com/questions/2471935/how-to-load-an-imageview-by-url-in-android
+    // Note, we may be able to combine our asynctasks or do something else
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+
+        public DownloadImageTask(ImageView bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error getting image", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            bmImage.setImageBitmap(result);
         }
     }
 }
