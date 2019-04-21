@@ -16,6 +16,7 @@ import android.os.AsyncTask;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -69,8 +70,7 @@ import java.net.URL;
 
 import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity {
     //this will store whether or not we were granted camera permissions
     String[] appPermissions = {
             Manifest.permission.CAMERA,
@@ -115,6 +115,14 @@ public class MainActivity extends AppCompatActivity
         txtView = (TextView) findViewById(R.id.textView);
         userMessage = (TextView) findViewById(R.id.userMessage);
 
+        // ------------------- Action bar ----------------------
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        // ------------------ Bottom navigation -------------------
+        BottomNavigationView navView = findViewById(R.id.nav_view);
+        navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
         FirebaseApp.initializeApp(this);
 
         /*mAuth = FirebaseAuth.getInstance();
@@ -130,25 +138,6 @@ public class MainActivity extends AppCompatActivity
             }
         });*/
         user = StartActivity.currentUser;
-
-        // --------- Navigation stuff
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        /*FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-        navigationView.setNavigationItemSelectedListener(this);
 
 
         // https://codelabs.developers.google.com/codelabs/bar-codes/#5
@@ -478,23 +467,12 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    // ------------------------ Navigation bar methods ----------------------------
+    // ------------------------ Navigation methods ----------------------------
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+            super.onBackPressed();
     }
 
     @Override
@@ -512,22 +490,34 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        if (id == R.id.nav_home) {
-            // Handle the camera action
-        } else if (id == R.id.nav_library) {
-            // Start library activity
-        }
-
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            // DEFAULT STUFF
+            switch (item.getItemId()) {
+                case R.id.navigation_home:
+                    //mTextMessage.setText(R.string.title_home);
+                    return true;
+                case R.id.navigation_dashboard:
+                    //mTextMessage.setText(R.string.title_dashboard);
+                    return true;
+                case R.id.navigation_notifications:
+                    //mTextMessage.setText(R.string.title_notifications);
+                    return true;
+            }
+            return false;
+        }
+    };
+
 
     // ------------- private classes for async tasks --------------
 
@@ -586,7 +576,7 @@ public class MainActivity extends AppCompatActivity
 
             } catch (Exception e){
                 //txtView.setText("Can't parse JSON: " + e);
-                Toast.makeText(context, "Can't parse JSON: " + e,Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Can't parse JSON: " + e,Toast.LENGTH_LONG).show();
             }
 
         }
