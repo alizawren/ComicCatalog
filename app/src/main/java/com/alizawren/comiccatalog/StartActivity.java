@@ -62,9 +62,19 @@ public class StartActivity extends AppCompatActivity {
                 Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                 startActivityForResult(signInIntent, RC_SIGN_IN);
 
+                // Disable button to prevent multiple sign in calls
+                findViewById(R.id.button2).setEnabled(false);
             }
         });
 
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // Enable sign in button
+        findViewById(R.id.button2).setEnabled(true);
     }
 
     @Override
@@ -75,12 +85,18 @@ public class StartActivity extends AppCompatActivity {
         if (requestCode == RC_SIGN_IN) {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
+                // Tell user that app is trying to sign in
+                Toast.makeText(context, "Signing In", Toast.LENGTH_LONG).show();
+
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 this.firebaseAuthWithGoogle(account);
             } catch (ApiException e) {
                 // Google Sign In failed, update UI appropriately
                 Log.w(TAG, "Google sign in failed", e);
+
+                // Re-enable sign in button
+                findViewById(R.id.button2).setEnabled(true);
             }
         }
     }
@@ -111,6 +127,9 @@ public class StartActivity extends AppCompatActivity {
                             // If sign in fails, display a message to the user.
                             Log.w(TAG, "signInWithCredential:failure", task.getException());
                             Toast.makeText(context, "Sign in failed!", Toast.LENGTH_SHORT).show();
+
+                            // Re-enable sign in button
+                            findViewById(R.id.button2).setEnabled(true);
                         }
                     }
                 });
