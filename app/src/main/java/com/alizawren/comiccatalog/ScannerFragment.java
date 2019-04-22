@@ -2,7 +2,6 @@ package com.alizawren.comiccatalog;
 
 import android.Manifest;
 import android.app.ActionBar;
-import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -10,35 +9,27 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.BaseColumns;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.support.v7.widget.Toolbar;
-import android.transition.Fade;
 import android.util.Log;
 import android.util.SparseArray;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -58,22 +49,23 @@ import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
-import org.json.JSONObject;
+import javax.annotation.Nullable;
 
-public class MainActivity extends AppCompatActivity {
-    //this will store whether or not we were granted camera permissions
+public class ScannerFragment extends Fragment {
     String[] appPermissions = {
             Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -88,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
     ImageView myImageView;
     Bitmap imageBitmap;
     TextView txtView;
-    TextView userMessage;
 
     ContentValues values;
     private Uri imageUri;
@@ -102,72 +93,45 @@ public class MainActivity extends AppCompatActivity {
     //private FirebaseAuth mAuth;
     User user;
 
-    final Context context = this;
+    Context context = null;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceBundle) {
+        context = getActivity();
+        return inflater.inflate(R.layout.fragment_scanner, null);
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        getWindow().setEnterTransition(new Fade());
-        getWindow().setExitTransition(new Fade());
-
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceBundle) {
         if(!checkAndRequestPermissions()) {
-            Toast.makeText(this,"We need permissions for our app to work!",Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(),"We need permissions for our app to work!",Toast.LENGTH_SHORT).show();
         }
 
-        myImageView = (ImageView) findViewById(R.id.imgview);
-        txtView = (TextView) findViewById(R.id.textView);
-        userMessage = (TextView) findViewById(R.id.userMessage);
+        FirebaseApp.initializeApp(getActivity());
 
-        // ------------------- Action bar ----------------------
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        myImageView = getView().findViewById(R.id.imgview);
+        txtView = getView().findViewById(R.id.txtview);
 
-        // ------------------ Bottom navigation -------------------
-        BottomNavigationView navView = findViewById(R.id.nav_view);
-        navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
-        FirebaseApp.initializeApp(this);
-
-        /*mAuth = FirebaseAuth.getInstance();
-        FirebaseUser user = mAuth.getCurrentUser();
-        FirebaseUtil.getUser(user).onResult(new Consumer<User>() {
-            @Override
-            public void accept(User user) {
-                currentUser = user;
-                if (currentUser != null) {
-                    userMessage.setText("Hello " + currentUser.getDisplayName() + "!");
-                }
-
-            }
-        });*/
-        user = StartActivity.currentUser;
-
-
-        // https://codelabs.developers.google.com/codelabs/bar-codes/#5
-        Button btn = (Button) findViewById(R.id.button);
-        btn.setOnClickListener(new View.OnClickListener() {
+        Button btnProcess = getView().findViewById(R.id.button_process);
+        btnProcess.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 scanBarcodesWithFirebase();
-
             }
         });
 
-        // Opens the camera activity
-        Button openCameraButton = (Button) findViewById(R.id.open_camera_button);
-        openCameraButton.setOnClickListener(new View.OnClickListener() {
+        Button btnCapture = getView().findViewById(R.id.button_capture);
+        btnCapture.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 //check if the camera exists first
                 if (checkCameraHardware(context)) {
                     //if the camera exists, then we request for permission to use camera
                     if(checkAndRequestPermissions()) {
                         dispatchTakePictureIntent();
                     }
-                        //more old code
+                    //more old code
                         /*values = new ContentValues();
                         values.put(MediaStore.Images.Media.TITLE, "New Picture");
                         values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
@@ -179,23 +143,22 @@ public class MainActivity extends AppCompatActivity {
                         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
                             startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
                         }*/
-                        //old code
-                        //final Intent intent = new Intent(context, CameraActivity.class);
-                        //startActivityForResult(intent, 1);
+                    //old code
+                    //final Intent intent = new Intent(context, CameraActivity.class);
+                    //startActivityForResult(intent, 1);
 
                 }
                 else {
-                    Toast.makeText(getApplicationContext(),"Device has no camera!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity().getApplicationContext(),"Device has no camera!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
-
     }
 
     private void scanBarcodesWithFirebase() {
 
         if (imageBitmap == null) {
-            Toast.makeText(getApplicationContext(), "Please take a picture first.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity().getApplicationContext(), "Please take a picture first.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -232,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
                         String rawValue = barcode.getRawValue();
                         String isbn = rawValue;
 
-                        new GetJSONTask(new Consumer<JSONObject>() {
+                        new ScannerFragment.GetJSONTask(new Consumer<JSONObject>() {
                             @Override
                             public void accept(JSONObject bookObject) {
                                 Log.d(TAG, "Response From Asynchronous task: " + bookObject.toString());
@@ -246,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onFailure(@NonNull Exception e) {
                         // Task failed with an exception
                         // ...
-                        Toast.makeText(getApplicationContext(), "The detector didn't work with error: " + e, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity().getApplicationContext(), "The detector didn't work with error: " + e, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -295,9 +258,9 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(context, "Can't parse JSON: " + e,Toast.LENGTH_SHORT).show();
         }
 
-        ImageView cover = new ImageView(this);
+        ImageView cover = new ImageView(getActivity());
         cover.setLayoutParams(new ActionBar.LayoutParams(ActionBar.LayoutParams.MATCH_PARENT, ActionBar.LayoutParams.MATCH_PARENT));
-        new DownloadImageTask(cover).execute(currentImageUrl);
+        new ScannerFragment.DownloadImageTask(cover).execute(currentImageUrl);
 
         String message = "Title: " + currentTitle + "\nISBN: " + currentIsbn +
                 "\nRecord URL: " + currentRecordUrl +
@@ -330,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void scanBarcodesWithGoogleAPI() {
         BarcodeDetector detector =
-                new BarcodeDetector.Builder(getApplicationContext())
+                new BarcodeDetector.Builder(getActivity().getApplicationContext())
                         .setBarcodeFormats(Barcode.ALL_FORMATS)
                         .build();
         if(!detector.isOperational()){
@@ -339,7 +302,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (imageBitmap == null) {
-            Toast.makeText(getApplicationContext(), "Please take a picture first.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity().getApplicationContext(), "Please take a picture first.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -358,8 +321,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == getActivity().RESULT_OK) {
             //Bundle extras = data.getExtras();
             //imageBitmap = (Bitmap) extras.get("data");
 
@@ -376,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
                 DeletePicTaken();
             }
             else {
-                Toast.makeText(getApplicationContext(), "Something went wrong when taking a picture!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity().getApplicationContext(), "Something went wrong when taking a picture!", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -385,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
     private void DeletePicTaken(){
         final String[] imageColumns = { BaseColumns._ID, MediaStore.MediaColumns.DATA };
         final String imageOrderBy = BaseColumns._ID + " DESC";
-        Cursor imageCursor = managedQuery(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageColumns, null, null, imageOrderBy);
+        Cursor imageCursor = getActivity().managedQuery(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageColumns, null, null, imageOrderBy);
         if(imageCursor.moveToFirst()){
             //int id = imageCursor.getInt(imageCursor.getColumnIndex(MediaStore.Images.Media._ID));
             String fullPath = currentPhotoPath;
@@ -400,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             // Create the File where the photo should go
             File photoFile = null;
             try {
@@ -412,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this,
+                Uri photoURI = FileProvider.getUriForFile(getActivity(),
                         "com.alizawren.comiccatalog.fileprovider",
                         photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
@@ -425,7 +388,7 @@ public class MainActivity extends AppCompatActivity {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
         // note that by calling CreateTempFile we are saving to the cache
         File image = File.createTempFile(
@@ -455,79 +418,22 @@ public class MainActivity extends AppCompatActivity {
         List<String> listPermissionsNeeded = new ArrayList<>();
         //loop through needed permissions
         for (String perm : appPermissions){
-            if(ContextCompat.checkSelfPermission(this,perm) != PackageManager.PERMISSION_GRANTED){
+            if(ContextCompat.checkSelfPermission(getActivity(),perm) != PackageManager.PERMISSION_GRANTED){
                 //add them to the list if not already granted
                 listPermissionsNeeded.add(perm);
             }
         }
         if(!listPermissionsNeeded.isEmpty()){
             //request remaining permissions
-            ActivityCompat.requestPermissions(this,
+            ActivityCompat.requestPermissions(getActivity(),
                     listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),
                     PERMISSIONS_REQUEST_CODE);
             return false;
         }
         //if everything is already requested, continue
-        Toast.makeText(this,"All Permissions Granted",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(),"All Permissions Granted",Toast.LENGTH_SHORT).show();
         return true;
     }
-
-    // ------------------------ Navigation methods ----------------------------
-
-    @Override
-    public void onBackPressed() {
-
-            super.onBackPressed();
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            // DEFAULT STUFF
-            switch (item.getItemId()) {
-                case R.id.navigation_explore:
-                    startActivity(ExploreActivity.class);
-                    return true;
-                case R.id.navigation_library:
-                    //mTextMessage.setText(R.string.title_dashboard);
-                    return true;
-                case R.id.navigation_settings:
-                    //mTextMessage.setText(R.string.title_notifications);
-                    return true;
-            }
-            return false;
-        }
-    };
-
-    private void startActivity(Class activityClass) {
-        final Intent intent = new Intent(this, activityClass);
-        this.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
-    }
-
 
     // ------------- private classes for async tasks --------------
 
@@ -542,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute(){
-            pd = ProgressDialog.show(MainActivity.this,"","Loading",true,false);
+            pd = ProgressDialog.show(getActivity(),"","Loading",true,false);
         }
         @Override
         protected String doInBackground(String... urls){
@@ -591,7 +497,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
 
     // Using this: https://stackoverflow.com/questions/2471935/how-to-load-an-imageview-by-url-in-android
     // Note, we may be able to combine our asynctasks or do something else

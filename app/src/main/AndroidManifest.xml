@@ -32,6 +32,18 @@
             android:parentActivityName=".StartActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
+        <activity
+            android:name=".ExploreActivity"
+            android:label="ExploreActivity"
+            android:parentActivityName=".StartActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".NavActivity"
+            android:label="NavActivity"
+            android:parentActivityName=".StartActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
             android:value="barcode" />
