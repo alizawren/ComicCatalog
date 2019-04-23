@@ -75,14 +75,6 @@ public class StartActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onResume() {
-        // Enable sign in button
-        findViewById(R.id.button2).setEnabled(true);
-
-        super.onResume();
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -142,6 +134,7 @@ public class StartActivity extends AppCompatActivity {
 
     private void updateUI() {
         Log.d(TAG, "Signed in, now updating UI.");
+        findViewById(R.id.button2).setEnabled(true);
         final Intent intent = new Intent(this, NavActivity.class);
         this.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
     }

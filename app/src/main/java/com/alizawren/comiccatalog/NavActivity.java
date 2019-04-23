@@ -9,6 +9,8 @@ import android.support.v7.widget.Toolbar;
 import android.transition.Fade;
 import android.view.MenuItem;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class NavActivity extends AppCompatActivity {
 
     static final String TAG = "NavActivity";
@@ -29,6 +31,13 @@ public class NavActivity extends AppCompatActivity {
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
         navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Signs User out of the app
+        FirebaseAuth.getInstance().signOut();
+        super.onBackPressed();
     }
 
     // ------------------------- Fragment methods -----------------------------
