@@ -33,6 +33,7 @@ public class StartActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 80;
+    private static final int RC_SIGN_OUT = 81;
 
     public static User currentUser;
     final Context context = this;
@@ -95,6 +96,10 @@ public class StartActivity extends AppCompatActivity {
                 // Re-enable sign in button
                 findViewById(R.id.button2).setEnabled(true);
             }
+        } else if (requestCode == RC_SIGN_OUT) {
+            // Re-enable sign in button
+            findViewById(R.id.button2).setEnabled(true);
+            Toast.makeText(context, "Signed out successfully!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -134,8 +139,9 @@ public class StartActivity extends AppCompatActivity {
 
     private void updateUI() {
         Log.d(TAG, "Signed in, now updating UI.");
-        findViewById(R.id.button2).setEnabled(true);
+        //findViewById(R.id.button2).setEnabled(true);
         final Intent intent = new Intent(this, NavActivity.class);
-        this.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+        //this.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+        this.startActivityForResult(intent, RC_SIGN_OUT, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
     }
 }

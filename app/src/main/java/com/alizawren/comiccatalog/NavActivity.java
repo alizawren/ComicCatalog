@@ -1,9 +1,12 @@
 package com.alizawren.comiccatalog;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.transition.Fade;
@@ -35,9 +38,25 @@ public class NavActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Signs User out of the app
-        FirebaseAuth.getInstance().signOut();
-        super.onBackPressed();
+        // Create a confirmation dialog of Signing Out
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm Sign Out")
+                .setMessage("Are you sure you want to Sign Out?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            // Return a Sign Out result
+                            Intent resultIntent = new Intent();
+                            resultIntent.putExtra("signout", "Signed User Out");
+                            setResult(RESULT_OK, resultIntent);
+
+                            // Signs User out of the app
+                            FirebaseAuth.getInstance().signOut();
+                            finish();
+                            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                        }})
+                .setNegativeButton("No", null)
+                .show();
     }
 
     // ------------------------- Fragment methods -----------------------------
